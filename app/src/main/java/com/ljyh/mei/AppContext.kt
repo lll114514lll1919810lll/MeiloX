@@ -13,17 +13,25 @@ import coil3.request.crossfade
 import com.ljyh.mei.constants.DefaultImageCacheLimitMb
 import com.ljyh.mei.constants.ImageCacheLimitMbKey
 import com.ljyh.mei.utils.dataStore
+import com.ljyh.mei.utils.log.FileLoggingTree
 import dagger.hilt.android.HiltAndroidApp
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import timber.log.Timber
 
 @HiltAndroidApp
 class AppContext : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        // Install logging once per process. MainActivity is recreated for glass/HDR
+        // changes; planting there would retain every old Activity and multiply logs.
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
+        Timber.plant(FileLoggingTree(this))
     }
 
     companion object {

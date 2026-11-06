@@ -13,7 +13,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class FileLoggingTree(private val context: Context) : Timber.Tree() {
+class FileLoggingTree(context: Context) : Timber.Tree() {
+
+    // Never retain an Activity from a logging tree that lives for the process lifetime.
+    private val appContext: Context = context.applicationContext
 
     private val logDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
     // 使用 IO 线程写入文件，避免卡顿 UI
@@ -30,7 +33,7 @@ class FileLoggingTree(private val context: Context) : Timber.Tree() {
 
     private fun saveLogToFile(priority: Int, tag: String?, message: String, t: Throwable?) {
         try {
-            val logDir = File(context.filesDir, "app_logs")
+            val logDir = File(appContext.filesDir, "app_logs")
             if (!logDir.exists()) logDir.mkdirs()
 
             // 每天生成一个日志文件，方便管理

@@ -274,7 +274,6 @@ import com.ljyh.mei.utils.cache.preloadImage
 import com.ljyh.mei.playback.nextPlaybackMediaItemIndex
 import com.ljyh.mei.utils.dataStore
 import com.ljyh.mei.utils.get
-import com.ljyh.mei.utils.log.FileLoggingTree
 import com.ljyh.mei.utils.netease.NeteaseUtils.getAndroidId
 import com.ljyh.mei.utils.rememberPreference
 import com.ljyh.mei.utils.rememberEnumPreference
@@ -287,6 +286,7 @@ import io.github.neoruaa.glasmio.glass.render.backdrops.rememberLayerBackdrop
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -335,14 +335,6 @@ class MainActivity : ComponentActivity() {
             },
         )
         CrashHandler.init(this)
-        if (BuildConfig.DEBUG) {
-            // 开发模式：既输出到 Logcat，也输出到文件
-            Timber.plant(Timber.DebugTree())
-            Timber.plant(FileLoggingTree(this))
-        } else {
-            // Release 模式：主要是植入文件记录器
-            Timber.plant(FileLoggingTree(this))
-        }
         lifecycleScope.launch {
             val initialPreferences = dataStore.data.first()
             configureGlassDynamicRange(window, hdrEnabled = initialPreferences.glassHdrOutputEnabled())
@@ -389,7 +381,12 @@ class MainActivity : ComponentActivity() {
             val navigationPreferences by context.dataStore.data
                 .collectAsState<Preferences, Preferences?>(initial = initialPreferences)
             LaunchedEffect(navigationPreferences?.glassHdrOutputEnabled()) {
-                if (navigationPreferences?.glassHdrOutputEnabled() != initialHdrOutput) {
+                val hdrOutput = navigationPreferences?.glassHdrOutputEnabled() ?: return@LaunchedEffect
+                if (hdrOutput == initialHdrOutput) return@LaunchedEffect
+                // Rapid toggles of the glass/HDR switches otherwise recreate the
+                // Activity several times in a row. Collapse them into the last state.
+                delay(400)
+                if (navigationPreferences?.glassHdrOutputEnabled() == hdrOutput) {
                     // Recreate material layers in the new window color space, as in the demo.
                     recreate()
                 }
