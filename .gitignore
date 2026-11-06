@@ -27,3 +27,5 @@ temp/
 /ncm_workspace
 /accounts
 /.local-research/
+# Release signing material must never be committed.
+/signing/
